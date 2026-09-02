@@ -8,18 +8,33 @@ cd "$(dirname "$0")"
 RETH_IMAGE="${RETH_IMAGE:-ghcr.io/gnosischain/reth_gnosis:v2.0.0}"
 NIMBUS_IMAGE="${NIMBUS_IMAGE:-ghcr.io/gnosischain/gnosis-nimbus-eth2:v26.6}"
 
-if [ -f ./reth.env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./reth.env
-  set +a
-fi
-if [ -f ./nimbus.env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./nimbus.env
-  set +a
-fi
+# Load KEY=VALUE lines from an env file without clobbering variables already
+# set in the environment, so `RETH_SNAPSHOT=false ./bootstrap.sh` wins over the
+# file. Values are plain and unquoted in these files; matching surrounding
+# quotes are stripped.
+load_env_file() {
+  local file="$1" line key val
+  [ -f "${file}" ] || return 0
+  while IFS= read -r line || [ -n "${line}" ]; do
+    case "${line}" in ''|'#'*) continue ;; esac
+    case "${line}" in *=*) ;; *) continue ;; esac
+    key="${line%%=*}"
+    val="${line#*=}"
+    key="${key#"${key%%[![:space:]]*}"}"
+    key="${key%"${key##*[![:space:]]}"}"
+    case "${key}" in ''|*[!A-Za-z0-9_]*) continue ;; esac
+    case "${val}" in
+      \"*\") val="${val#\"}"; val="${val%\"}" ;;
+      \'*\') val="${val#\'}"; val="${val%\'}" ;;
+    esac
+    if [ -z "${!key+x}" ]; then
+      export "${key}=${val}"
+    fi
+  done < "${file}"
+}
+
+load_env_file ./reth.env
+load_env_file ./nimbus.env
 
 chain="${RETH_CHAIN:-gnosis}"
 node_type="${RETH_NODE_TYPE:-full}"
