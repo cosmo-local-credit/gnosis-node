@@ -1,0 +1,16 @@
+gnosis.YOURDOMAIN {
+	reverse_proxy reth:8545
+}
+
+ws.gnosis.YOURDOMAIN {
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	reverse_proxy @websockets reth:8546
+}
+
+beacon.gnosis.YOURDOMAIN {
+	reverse_proxy nimbus:5052
+}

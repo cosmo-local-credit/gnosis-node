@@ -1,0 +1,66 @@
+# Gnosis full node: reth (EL) + nimbus (CL)
+# Pin image tags here. Everything else lives in the env files.
+#
+# Chiado: set RETH_CHAIN=chiado and NIMBUS_NETWORK=chiado in the env files,
+# and point NIMBUS_CHECKPOINT_SYNC_URL at https://checkpoint.chiadochain.net
+
+services:
+  reth:
+    image: ghcr.io/gnosischain/reth_gnosis:v2.0.0
+    restart: unless-stopped
+    stop_grace_period: 5m
+    env_file: ./reth.env
+    entrypoint: ["/bin/bash", "/scripts/reth.sh"]
+    volumes:
+      - ./data/reth:/data
+      - ./shared:/shared:ro
+      - ./scripts:/scripts:ro
+    ports:
+      - "127.0.0.1:8545:8545"
+      - "127.0.0.1:8546:8546"
+      - "127.0.0.1:8551:8551"
+      - "127.0.0.1:9001:9001"
+      - "30303:30303"
+      - "30303:30303/udp"
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - gnosis
+
+  nimbus:
+    image: ghcr.io/gnosischain/gnosis-nimbus-eth2:v26.6
+    restart: unless-stopped
+    stop_grace_period: 2m
+    user: "1000:1000"
+    env_file: ./nimbus.env
+    entrypoint: ["/bin/bash", "/scripts/nimbus.sh"]
+    volumes:
+      - ./data/nimbus:/data
+      - ./shared:/shared:ro
+      - ./scripts:/scripts:ro
+    ports:
+      - "127.0.0.1:5052:5052"
+      - "127.0.0.1:8008:8008"
+      - "9000:9000"
+      - "9000:9000/udp"
+    depends_on:
+      reth:
+        condition: service_started
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - gnosis
+
+networks:
+  gnosis:
+    external: true
