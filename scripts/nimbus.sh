@@ -42,7 +42,7 @@ fi
 if [ "${NIMBUS_LIGHT_CLIENT:-true}" = "true" ]; then
   args+=(
     --light-client-data-serve=true
-    --light-client-data-import-mode=full
+    --light-client-data-import-mode="${NIMBUS_LIGHT_CLIENT_IMPORT_MODE:-only-new}"
   )
 fi
 

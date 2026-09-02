@@ -58,14 +58,21 @@ vi nimbus.env
 docker compose up -d
 ```
 
-`bootstrap.sh` is idempotent. It skips snapshot/checkpoint work when `data/reth` or `data/nimbus` already contain files.
+`bootstrap.sh` records a completion marker for each bootstrap step. Stop the
+stack (`docker compose down`) before bootstrapping; the script refuses to write
+a datadir while that service is running.
+
+An interrupted reth download resumes on the next run. Nimbus checkpoint data is
+staged under `data/.nimbus-checkpoint.*` and moved into `data/nimbus` only after
+a successful sync. Leftover staging dirs from a failed run are deleted on the
+next checkpoint attempt.
 
 ### Snapshot restore
 
 Reth does not snap-sync from peers the way geth does. Without a snapshot it executes from genesis, which takes days. Bootstrap runs:
 
 ```text
-reth download --chain gnosis --full --datadir /data \
+reth download --chain gnosis --full --resumable --datadir /data \
   --manifest-url https://reth-snapshots.gnosischain.com/latest/gnosis/manifest.json
 ```
 
@@ -79,11 +86,12 @@ To skip either step:
 RETH_SNAPSHOT=false NIMBUS_CHECKPOINT=false ./bootstrap.sh
 ```
 
-To force a re-download, stop the stack, wipe the datadir, and re-run bootstrap:
+To force a re-download, stop the stack, remove the relevant datadir (including its
+completion marker), and re-run bootstrap:
 
 ```bash
 docker compose down
-rm -rf data/reth/*          # or data/nimbus/*
+rm -rf data/reth            # or data/nimbus
 ./bootstrap.sh
 docker compose up -d
 ```
@@ -112,11 +120,14 @@ curl -s http://127.0.0.1:5052/eth/v1/node/syncing
 curl -s http://127.0.0.1:5052/eth/v1/node/peer_count
 ```
 
-After a checkpoint sync, compare the beacon head with another source:
+After a checkpoint sync, compare the finalized **state** root with the official
+Gnosis consensus RPC (`rpc-gbc.gnosischain.com`). Checkpoint sync sites such as
+`checkpoint.gnosischain.com` are Checkpointz and do not serve this Beacon API
+path.
 
 ```bash
-curl -s http://127.0.0.1:5052/eth/v1/beacon/blocks/head/root
-curl -s https://checkpoint.gnosischain.com/eth/v1/beacon/genesis
+curl -s http://127.0.0.1:5052/eth/v1/beacon/states/finalized/root
+curl -s https://rpc-gbc.gnosischain.com/eth/v1/beacon/states/finalized/root
 ```
 
 ### Reload config
