@@ -19,6 +19,10 @@ if [ -n "${NIMBUS_HISTORY:-}" ]; then
   args+=(--history="${NIMBUS_HISTORY}")
 fi
 
+if [ -n "${NIMBUS_NAT:-}" ]; then
+  args+=(--nat="${NIMBUS_NAT}")
+fi
+
 if [ "${NIMBUS_ENR_AUTO_UPDATE:-true}" = "true" ]; then
   args+=(--enr-auto-update)
 fi
