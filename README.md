@@ -15,7 +15,7 @@ From the [Gnosis node docs](https://docs.gnosischain.com/node):
 - NVMe SSD preferred (SATA SSD acceptable)
 - Unmetered or high-cap network
 
-A reth **full** snapshot plus nimbus checkpoint data is hundreds of GB and grows. Plan on **1.5 TB+** free NVMe so download, extract, and later growth all fit.
+A reth **full** snapshot is ~260 GB compressed and ~370 GB extracted, and it grows. Nimbus checkpoint data is small (under 100 MB at first). Plan on **1 TB+** free NVMe so download, extract, and later growth all fit; `--archive` needs considerably more.
 
 ## Features
 
@@ -156,11 +156,20 @@ Official docs: [Reth](https://docs.gnosischain.com/node/manual/execution/reth), 
 
 ### Optional HTTPS
 
+Domains are read from `caddy/.env` (gitignored), so host-specific names stay out
+of git:
+
 ```bash
-# edit caddy/Caddyfile with your domain
 cd caddy
+cp .env.example .env
+vi .env                 # RPC_DOMAIN, WS_DOMAIN, BEACON_DOMAIN
 docker compose up -d
 ```
+
+Point the DNS records at the host **before** starting caddy, so ACME succeeds on
+the first attempt instead of backing off. Note that `wss://` requires HTTP/1.1;
+an HTTP/2 client sending `Connection: Upgrade` gets an empty `200`, because that
+header has no meaning in h2.
 
 ## Chiado testnet
 
