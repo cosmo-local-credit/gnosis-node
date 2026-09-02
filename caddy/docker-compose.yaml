@@ -3,6 +3,7 @@ services:
     restart: unless-stopped
     container_name: caddy
     image: caddy:2-alpine
+    env_file: ./.env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data:/data

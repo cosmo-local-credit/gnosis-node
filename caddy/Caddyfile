@@ -1,8 +1,11 @@
-gnosis.YOURDOMAIN {
+# Domains come from caddy/.env (see .env.example). Keeps host-specific
+# names out of git, matching the cel2-node layout.
+
+{$RPC_DOMAIN} {
 	reverse_proxy reth:8545
 }
 
-ws.gnosis.YOURDOMAIN {
+{$WS_DOMAIN} {
 	@websockets {
 		header Connection *Upgrade*
 		header Upgrade websocket
@@ -11,6 +14,6 @@ ws.gnosis.YOURDOMAIN {
 	reverse_proxy @websockets reth:8546
 }
 
-beacon.gnosis.YOURDOMAIN {
+{$BEACON_DOMAIN} {
 	reverse_proxy nimbus:5052
 }
