@@ -1,0 +1,5 @@
+shared/
+data/
+caddy/data/
+*.log
+caddy/.env

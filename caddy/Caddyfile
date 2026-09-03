@@ -1,0 +1,19 @@
+# Domains come from caddy/.env (see .env.example). Keeps host-specific
+# names out of git, matching the cel2-node layout.
+
+{$RPC_DOMAIN} {
+	reverse_proxy reth:8545
+}
+
+{$WS_DOMAIN} {
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	reverse_proxy @websockets reth:8546
+}
+
+{$BEACON_DOMAIN} {
+	reverse_proxy nimbus:5052
+}
