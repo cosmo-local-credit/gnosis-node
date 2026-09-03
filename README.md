@@ -82,6 +82,34 @@ Client flags are env files mapped by `scripts/*.sh`. After editing `reth.env` or
 docker compose up -d
 ```
 
+### Memory tuning
+
+`reth.toml` (mounted read-only, selected by `RETH_CONFIG` in `reth.env`) is
+merged over reth's built-in defaults; unset keys keep theirs. It exists because
+reth also writes a `reth.toml` **inside the datadir**, which is gitignored and
+regenerated with upstream defaults whenever the datadir is wiped.
+
+It currently lowers the execution-stage commit thresholds. Reth buffers state
+changes in memory until one trips, and the upstream defaults
+(`max_cumulative_gas` 1.5 Tgas, `max_duration` 10m) are sized for a much larger
+machine: at ~1 Ggas/s that accumulates hundreds of Ggas before committing, which
+grew reth to 29 GB RSS and OOM-killed a 30 GB host mid-sync.
+
+When reth exhausts host memory the whole box wedges rather than just reth
+dying - sshd accepts TCP but never sends a banner, journald hits its watchdog,
+tailscale goes quiet - and recovery needs an out-of-band reboot. It looks
+exactly like a disk fault. Check for it with:
+
+```bash
+journalctl -b -1 -p err | grep -i "out of memory"
+```
+
+On a host with substantially more RAM these can be raised; the tradeoff is
+throughput, since every commit is a pause. Restarting reth resumes from the last
+committed checkpoint, losing only the uncommitted window - but do not restart
+while RSS is already near the ceiling, because the graceful shutdown has to
+flush the whole buffer and can itself tip the host over.
+
 ### Update images
 
 Bump the tags in `docker-compose.yaml` (and the matching defaults at the top of `bootstrap.sh` if you will re-bootstrap), then:

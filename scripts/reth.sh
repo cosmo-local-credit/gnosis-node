@@ -49,6 +49,10 @@ if [ "${RETH_WS:-true}" = "true" ]; then
   )
 fi
 
+if [ -n "${RETH_CONFIG:-}" ]; then
+  args+=(--config "${RETH_CONFIG}")
+fi
+
 if [ -n "${RETH_NAT:-}" ]; then
   args+=(--nat "${RETH_NAT}")
 fi

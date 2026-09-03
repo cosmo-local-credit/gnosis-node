@@ -1,0 +1,28 @@
+# Reth tuning that must not live in the datadir.
+#
+# Reth generates its own reth.toml inside the datadir, which is gitignored and
+# is recreated with upstream defaults whenever the datadir is wiped. Anything
+# here is merged over those defaults (unset keys keep their default), so this
+# file only carries what we deliberately override.
+#
+# Mounted read-only at /config/reth.toml and selected with RETH_CONFIG in
+# reth.env.
+
+# Execution buffers state changes in memory until one of these trips, then
+# commits. The upstream defaults (max_cumulative_gas 1.5Tgas, max_duration
+# "10m", max_changes 5000000) are sized for a much larger machine: at ~1Ggas/s
+# a 10-minute window accumulates hundreds of Ggas of changes, which grew reth
+# to 29GB RSS and OOM-killed a 30GB host twice during a genesis sync.
+#
+# When reth exhausts host memory the whole box wedges rather than just reth
+# dying: sshd accepts TCP but never sends a banner, journald hits its watchdog,
+# and recovery needs an out-of-band reboot. It looks exactly like a disk fault.
+#
+# These values make it commit often enough that RSS sawtooths instead of
+# climbing. Raise them on a host with substantially more RAM; the tradeoff is
+# throughput, since each commit is a pause.
+[stages.execution]
+max_blocks = 250000
+max_changes = 2000000
+max_cumulative_gas = 300000000000
+max_duration = "5m"
